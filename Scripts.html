@@ -1,0 +1,242 @@
+<script>
+  (function () {
+    var state = {
+      profile: null,
+      groups: [],
+      students: []
+    };
+
+    var ui = {};
+
+    document.addEventListener('DOMContentLoaded', init);
+
+    function init() {
+      cacheDom();
+      bindEvents();
+      bootstrap();
+    }
+
+    function cacheDom() {
+      ui.userEmail = document.getElementById('userEmail');
+      ui.userMode = document.getElementById('userMode');
+      ui.userMessage = document.getElementById('userMessage');
+      ui.groupSelect = document.getElementById('groupSelect');
+      ui.studentSelect = document.getElementById('studentSelect');
+      ui.studentSelectBlock = document.getElementById('studentSelectBlock');
+      ui.clock = document.getElementById('clock');
+      ui.clockCenter = document.getElementById('clockCenter');
+      ui.status = document.getElementById('status');
+      ui.listView = document.getElementById('listView');
+      ui.printBtn = document.getElementById('printBtn');
+    }
+
+    function bindEvents() {
+      ui.groupSelect.addEventListener('change', onGroupChange);
+      ui.studentSelect.addEventListener('change', onStudentChange);
+      ui.printBtn.addEventListener('click', function () { window.print(); });
+    }
+
+    function bootstrap() {
+      setStatus('Cargando...', 'loading');
+      callServer('apiGetInitialState')
+        .then(function (resp) {
+          if (!resp.ok) {
+            renderUnauthorized(resp.profile);
+            return;
+          }
+
+          state.profile = resp.profile;
+          state.groups = resp.groups || [];
+          renderProfile();
+          populateGroupSelect(state.groups);
+
+          if (!state.groups.length) {
+            setStatus('No hay grupos disponibles.', 'error');
+            return;
+          }
+
+          if (isTeacher()) {
+            ui.studentSelectBlock.style.display = '';
+            loadStudentsForGroup(ui.groupSelect.value);
+          } else {
+            ui.studentSelectBlock.style.display = 'none';
+            loadCurrentUserClock(ui.groupSelect.value);
+          }
+        })
+        .catch(showError);
+    }
+
+    function renderUnauthorized(profile) {
+      ui.userEmail.textContent = profile && profile.email ? profile.email : '(sin email)';
+      ui.userMode.textContent = 'sin acceso';
+      ui.userMessage.textContent = profile && profile.message ? profile.message : 'Acceso no permitido.';
+      setStatus('Acceso no permitido.', 'error');
+      ui.groupSelect.disabled = true;
+      ui.studentSelect.disabled = true;
+      renderClock([]);
+    }
+
+    function renderProfile() {
+      ui.userEmail.textContent = state.profile.email;
+      ui.userMode.textContent = state.profile.mode === 'teacher' ? 'profesor' : 'alumno';
+      ui.userMessage.textContent = state.profile.message || '';
+    }
+
+    function populateGroupSelect(groups) {
+      ui.groupSelect.innerHTML = '';
+      groups.forEach(function (group) {
+        ui.groupSelect.appendChild(new Option(group, group));
+      });
+    }
+
+    function populateStudentSelect(students) {
+      ui.studentSelect.innerHTML = '';
+      students.forEach(function (student) {
+        ui.studentSelect.appendChild(new Option(student.name, student.nia));
+      });
+      ui.studentSelect.disabled = students.length === 0;
+    }
+
+    function onGroupChange() {
+      var group = ui.groupSelect.value;
+      if (!group) {
+        return;
+      }
+
+      if (isTeacher()) {
+        loadStudentsForGroup(group);
+      } else {
+        loadCurrentUserClock(group);
+      }
+    }
+
+    function onStudentChange() {
+      if (!isTeacher()) {
+        return;
+      }
+
+      var group = ui.groupSelect.value;
+      var nia = ui.studentSelect.value;
+      if (!group || !nia) {
+        return;
+      }
+
+      loadStudentClock(group, nia);
+    }
+
+    function loadStudentsForGroup(group) {
+      setStatus('Cargando alumnos...', 'loading');
+      callServer('apiGetStudentsByGroup', group)
+        .then(function (students) {
+          state.students = students || [];
+          populateStudentSelect(state.students);
+
+          if (!state.students.length) {
+            setStatus('El grupo no tiene alumnos válidos.', 'error');
+            renderClock([]);
+            return;
+          }
+
+          loadStudentClock(group, state.students[0].nia);
+        })
+        .catch(showError);
+    }
+
+    function loadStudentClock(group, nia) {
+      setStatus('Cargando reloj del alumno...', 'loading');
+      callServer('apiGetClockForStudent', group, nia)
+        .then(function (clockData) {
+          renderClock(clockData.hours || []);
+          ui.clockCenter.textContent = clockData.student.name;
+          setStatus('');
+        })
+        .catch(showError);
+    }
+
+    function loadCurrentUserClock(group) {
+      setStatus('Cargando tu reloj...', 'loading');
+      callServer('apiGetClockForCurrentUserInGroup', group)
+        .then(function (clockData) {
+          renderClock(clockData.hours || []);
+          ui.clockCenter.textContent = clockData.student.name;
+          setStatus('');
+        })
+        .catch(showError);
+    }
+
+    function renderClock(hours) {
+      var normalized = normalizeHours(hours);
+      ui.clock.innerHTML = '';
+      ui.listView.innerHTML = '';
+
+      for (var i = 1; i <= 12; i++) {
+        var hourInfo = normalized[i - 1];
+        var angle = ((i - 3) * 30) * (Math.PI / 180);
+        var radius = ui.clock.clientWidth * 0.41;
+        var x = (ui.clock.clientWidth / 2) + radius * Math.cos(angle);
+        var y = (ui.clock.clientHeight / 2) + radius * Math.sin(angle);
+
+        var node = document.createElement('div');
+        node.className = 'hour-node ' + hourInfo.type;
+        node.style.left = x + 'px';
+        node.style.top = y + 'px';
+        node.innerHTML = '<span class="num">' + i + '</span><div>' + escapeHtml(hourInfo.text) + '</div>';
+        ui.clock.appendChild(node);
+
+        var li = document.createElement('li');
+        li.textContent = 'Hora ' + i + ': ' + hourInfo.text;
+        ui.listView.appendChild(li);
+      }
+    }
+
+    function normalizeHours(hours) {
+      var empty = { text: 'Sin asignar', type: 'empty' };
+      var map = {};
+
+      (hours || []).forEach(function (item) {
+        map[item.hour] = {
+          text: item.text || 'Sin asignar',
+          type: item.type || 'empty'
+        };
+      });
+
+      var ordered = [];
+      for (var i = 1; i <= 12; i++) {
+        ordered.push(map[i] || empty);
+      }
+      return ordered;
+    }
+
+    function setStatus(message, type) {
+      ui.status.textContent = message || '';
+      ui.status.className = 'status' + (type ? ' ' + type : '');
+    }
+
+    function showError(err) {
+      setStatus(err && err.message ? err.message : String(err), 'error');
+    }
+
+    function isTeacher() {
+      return state.profile && state.profile.mode === 'teacher';
+    }
+
+    function callServer(fnName) {
+      var args = Array.prototype.slice.call(arguments, 1);
+      return new Promise(function (resolve, reject) {
+        var runner = google.script.run
+          .withSuccessHandler(resolve)
+          .withFailureHandler(reject);
+        runner[fnName].apply(runner, args);
+      });
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  })();
+</script>

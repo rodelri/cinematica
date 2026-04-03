@@ -10,6 +10,10 @@ var Utils = (function () {
     return a < b ? a + '|' + b : b + '|' + a;
   }
 
+  function normalizeEmail_(value) {
+    return asCleanString_(value).toLowerCase();
+  }
+
   function cloneArray_(arr) {
     return arr.slice();
   }
@@ -26,6 +30,7 @@ var Utils = (function () {
   return {
     asCleanString_: asCleanString_,
     pairKey_: pairKey_,
+    normalizeEmail_: normalizeEmail_,
     cloneArray_: cloneArray_,
     rotateArray_: rotateArray_
   };

@@ -1,14 +1,4 @@
 /**
- * Mantiene el endpoint web existente del proyecto.
- * No interfiere con las funciones de hoja de cálculo.
- */
-function doGet() {
-  return HtmlService
-    .createHtmlOutputFromFile('Index')
-    .setTitle('Cinemática');
-}
-
-/**
  * Menú principal del proyecto.
  */
 function onOpen() {
