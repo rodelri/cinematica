@@ -82,7 +82,7 @@ var SheetIO = (function () {
 
         var text = mates
           .map(function (mateNia) {
-            return mateNia + ' - ' + niaToName[mateNia];
+            return niaToName[mateNia];
           })
           .join(' | ');
 
