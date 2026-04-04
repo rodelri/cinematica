@@ -24,17 +24,21 @@
       ui.studentSelect = document.getElementById('studentSelect');
       ui.studentSelectBlock = document.getElementById('studentSelectBlock');
       ui.clockWrapper = document.querySelector('.clock-wrapper');
+      ui.tickLayer = document.getElementById('tickLayer');
       ui.clock = document.getElementById('clock');
       ui.clockCenter = document.getElementById('clockCenter');
       ui.status = document.getElementById('status');
       ui.listView = document.getElementById('listView');
       ui.printBtn = document.getElementById('printBtn');
+      ui.pdfBtn = document.getElementById('pdfBtn');
     }
 
     function bindEvents() {
       ui.groupSelect.addEventListener('change', onGroupChange);
       ui.studentSelect.addEventListener('change', onStudentChange);
       ui.printBtn.addEventListener('click', function () { window.print(); });
+      ui.pdfBtn.addEventListener('click', onCreatePdfClick);
+      window.addEventListener('resize', function () { renderTicks(true); });
     }
 
     function bootstrap() {
@@ -49,6 +53,7 @@
           state.profile = resp.profile;
           state.groups = resp.groups || [];
           renderProfile();
+          renderTicks();
           populateGroupSelect(state.groups);
 
           if (!state.groups.length) {
@@ -58,9 +63,11 @@
 
           if (isTeacher()) {
             ui.studentSelectBlock.style.display = '';
+            ui.pdfBtn.style.display = '';
             loadStudentsForGroup(ui.groupSelect.value);
           } else {
             ui.studentSelectBlock.style.display = 'none';
+            ui.pdfBtn.style.display = 'none';
             loadCurrentUserClock(ui.groupSelect.value);
           }
         })
@@ -74,6 +81,7 @@
       setStatus('Acceso no permitido.', 'error');
       ui.groupSelect.disabled = true;
       ui.studentSelect.disabled = true;
+      ui.pdfBtn.style.display = 'none';
       renderClock([]);
     }
 
@@ -123,6 +131,27 @@
       }
 
       loadStudentClock(group, nia);
+    }
+
+    function onCreatePdfClick() {
+      if (!isTeacher()) {
+        return;
+      }
+      var group = ui.groupSelect.value;
+      if (!group) {
+        setStatus('Selecciona un grupo para crear el PDF.', 'error');
+        return;
+      }
+
+      setStatus('Generando PDF del grupo...', 'loading');
+      callServer('apiCreateGroupPdf', group)
+        .then(function (result) {
+          setStatus('PDF creado: ' + result.name);
+          if (result.url) {
+            window.open(result.url, '_blank');
+          }
+        })
+        .catch(showError);
     }
 
     function loadStudentsForGroup(group) {
@@ -188,6 +217,33 @@
         var li = document.createElement('li');
         li.textContent = 'Hora ' + i + ': ' + hourInfo.text;
         ui.listView.appendChild(li);
+      }
+    }
+
+    function renderTicks(force) {
+      if (!ui.tickLayer) {
+        return;
+      }
+
+      if (!force && ui.tickLayer.childElementCount) {
+        return;
+      }
+
+      if (force) {
+        ui.tickLayer.innerHTML = '';
+      }
+
+      var rect = ui.clockWrapper.getBoundingClientRect();
+      var outerRadius = rect.width / 2;
+      var minuteRadius = Math.max(outerRadius - 12, 20);
+      var hourRadius = Math.max(outerRadius - 18, 16);
+
+      for (var i = 0; i < 60; i++) {
+        var tick = document.createElement('div');
+        var isHour = i % 5 === 0;
+        tick.className = 'tick ' + (isHour ? 'hour' : 'minute');
+        tick.style.transform = 'rotate(' + (i * 6) + 'deg) translate(0, -' + (isHour ? hourRadius : minuteRadius) + 'px)';
+        ui.tickLayer.appendChild(tick);
       }
     }
 

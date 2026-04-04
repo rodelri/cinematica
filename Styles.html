@@ -9,6 +9,9 @@
     --pair: #93c5fd;
     --trio: #c4b5fd;
     --empty: #e5e7eb;
+    --brand-1: #2563eb;
+    --brand-2: #60a5fa;
+    --brand-3: #1e40af;
   }
 
   * { box-sizing: border-box; }
@@ -86,6 +89,10 @@
     border: none;
     cursor: pointer;
   }
+  button.secondary {
+    background: #0f766e;
+    display: none;
+  }
 
   .status {
     min-height: 22px;
@@ -111,6 +118,33 @@
     inset: 0;
   }
 
+  .tick-layer {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    z-index: 0;
+  }
+
+  .tick {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform-origin: 0 0;
+    border-radius: 999px;
+  }
+
+  .tick.minute {
+    width: 9px;
+    height: 2px;
+    background: rgba(37, 99, 235, 0.25);
+  }
+
+  .tick.hour {
+    width: 15px;
+    height: 3px;
+    background: var(--brand-1);
+  }
+
   .clock-hand {
     position: absolute;
     top: 50%;
@@ -125,13 +159,35 @@
   .hour-hand {
     width: 22%;
     height: 6px;
-    background: #1d4ed8;
+    background: var(--brand-3);
   }
 
   .minute-hand {
     width: 33%;
     height: 4px;
-    background: #60a5fa;
+    background: var(--brand-2);
+    transform: translateY(-50%) rotate(-90deg);
+  }
+
+  .clock-hand::after {
+    content: '';
+    position: absolute;
+    right: -9px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+    border-left: 9px solid currentColor;
+  }
+
+  .hour-hand::after {
+    color: var(--brand-3);
+  }
+
+  .minute-hand::after {
+    color: var(--brand-2);
   }
 
   .clock-center {
@@ -227,8 +283,16 @@
   }
 
   @media print {
-    .controls, .status, .legend-card, #printBtn { display: none !important; }
+    .app-header,
+    .user-card,
+    .controls,
+    .status,
+    .list-card,
+    .legend-card { display: none !important; }
+    .app-shell { max-width: 100%; padding: 0; }
+    .clock-card { padding: 0; border: none; }
+    .clock-wrapper { width: 100vw; height: 100vw; max-width: 100vh; max-height: 100vh; }
     body { background: #fff; }
-    .card { box-shadow: none; border: 1px solid #ddd; }
+    .card { box-shadow: none; border: none; }
   }
 </style>

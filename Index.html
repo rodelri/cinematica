@@ -37,6 +37,7 @@
 
         <div class="control-actions">
           <button id="printBtn" type="button">Imprimir reloj</button>
+          <button id="pdfBtn" type="button" class="secondary">PDF del grupo (admin)</button>
         </div>
       </section>
 
@@ -44,6 +45,7 @@
 
       <section class="card clock-card">
         <div class="clock-wrapper">
+          <div id="tickLayer" class="tick-layer" aria-hidden="true"></div>
           <div class="clock-hand hour-hand" aria-hidden="true"></div>
           <div class="clock-hand minute-hand" aria-hidden="true"></div>
           <div id="clockCenter" class="clock-center">Sin alumno</div>
