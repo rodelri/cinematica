@@ -35,6 +35,11 @@
           <select id="studentSelect"></select>
         </div>
 
+        <div class="control-block" id="hourViewBlock" hidden>
+          <label for="hourSelect">Vista por hora (profe)</label>
+          <select id="hourSelect"></select>
+        </div>
+
         <div class="control-actions">
           <button id="printBtn" type="button">Imprimir reloj</button>
           <button id="pdfBtn" type="button" class="secondary" hidden>PDF del grupo (admin)</button>
@@ -56,6 +61,11 @@
       <section class="card list-card">
         <h2>Vista en lista</h2>
         <ul id="listView" class="list-view"></ul>
+      </section>
+
+      <section class="card list-card" id="hourOverviewCard" hidden>
+        <h2 id="hourOverviewTitle">Parejas/tríos por hora</h2>
+        <ul id="hourOverviewList" class="list-view"></ul>
       </section>
 
       <section class="card legend-card">

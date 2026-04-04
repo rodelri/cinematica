@@ -24,6 +24,8 @@
       ui.groupSelect = document.getElementById('groupSelect');
       ui.studentSelect = document.getElementById('studentSelect');
       ui.studentSelectBlock = document.getElementById('studentSelectBlock');
+      ui.hourViewBlock = document.getElementById('hourViewBlock');
+      ui.hourSelect = document.getElementById('hourSelect');
       ui.clockWrapper = document.querySelector('.clock-wrapper');
       ui.tickLayer = document.getElementById('tickLayer');
       ui.clock = document.getElementById('clock');
@@ -32,11 +34,15 @@
       ui.listView = document.getElementById('listView');
       ui.printBtn = document.getElementById('printBtn');
       ui.pdfBtn = document.getElementById('pdfBtn');
+      ui.hourOverviewCard = document.getElementById('hourOverviewCard');
+      ui.hourOverviewTitle = document.getElementById('hourOverviewTitle');
+      ui.hourOverviewList = document.getElementById('hourOverviewList');
     }
 
     function bindEvents() {
       ui.groupSelect.addEventListener('change', onGroupChange);
       ui.studentSelect.addEventListener('change', onStudentChange);
+      ui.hourSelect.addEventListener('change', onHourChange);
       ui.printBtn.addEventListener('click', function () {
         refreshClockLayout();
         window.print();
@@ -60,6 +66,7 @@
           renderProfile();
           renderTicks();
           populateGroupSelect(state.groups);
+          populateHourSelect();
 
           if (!state.groups.length) {
             setStatus('No hay grupos disponibles.', 'error');
@@ -69,10 +76,15 @@
           if (isTeacher()) {
             ui.studentSelectBlock.style.display = '';
             ui.pdfBtn.hidden = false;
+            ui.hourViewBlock.hidden = false;
+            ui.hourOverviewCard.hidden = false;
             loadStudentsForGroup(ui.groupSelect.value);
+            loadHourOverview(ui.groupSelect.value, ui.hourSelect.value);
           } else {
             ui.studentSelectBlock.style.display = 'none';
             ui.pdfBtn.hidden = true;
+            ui.hourViewBlock.hidden = true;
+            ui.hourOverviewCard.hidden = true;
             loadCurrentUserClock(ui.groupSelect.value);
           }
         })
@@ -87,6 +99,8 @@
       ui.groupSelect.disabled = true;
       ui.studentSelect.disabled = true;
       ui.pdfBtn.hidden = true;
+      ui.hourViewBlock.hidden = true;
+      ui.hourOverviewCard.hidden = true;
       renderClock([]);
     }
 
@@ -119,6 +133,7 @@
 
       if (isTeacher()) {
         loadStudentsForGroup(group);
+        loadHourOverview(group, ui.hourSelect.value);
       } else {
         loadCurrentUserClock(group);
       }
@@ -159,6 +174,18 @@
         .catch(showError);
     }
 
+    function onHourChange() {
+      if (!isTeacher()) {
+        return;
+      }
+      var group = ui.groupSelect.value;
+      var hour = ui.hourSelect.value;
+      if (!group || !hour) {
+        return;
+      }
+      loadHourOverview(group, hour);
+    }
+
     function loadStudentsForGroup(group) {
       setStatus('Cargando alumnos...', 'loading');
       callServer('apiGetStudentsByGroup', group)
@@ -195,6 +222,14 @@
           renderClock(clockData.hours || []);
           ui.clockCenter.textContent = clockData.student.name;
           setStatus('');
+        })
+        .catch(showError);
+    }
+
+    function loadHourOverview(group, hour) {
+      callServer('apiGetHourOverview', group, Number(hour))
+        .then(function (resp) {
+          renderHourOverview(resp);
         })
         .catch(showError);
     }
@@ -256,6 +291,31 @@
     function refreshClockLayout() {
       renderTicks(true);
       renderClock(state.lastHours);
+    }
+
+    function populateHourSelect() {
+      ui.hourSelect.innerHTML = '';
+      for (var i = 1; i <= 12; i++) {
+        ui.hourSelect.appendChild(new Option('Hora ' + i, i));
+      }
+    }
+
+    function renderHourOverview(data) {
+      ui.hourOverviewList.innerHTML = '';
+      ui.hourOverviewTitle.textContent = 'Parejas/tríos · ' + data.hourLabel;
+
+      if (!data.items || !data.items.length) {
+        var emptyLi = document.createElement('li');
+        emptyLi.textContent = 'Sin asignaciones en esta hora.';
+        ui.hourOverviewList.appendChild(emptyLi);
+        return;
+      }
+
+      data.items.forEach(function (item) {
+        var li = document.createElement('li');
+        li.textContent = (item.type === 'trio' ? 'Trío: ' : 'Pareja: ') + item.members.join(' | ');
+        ui.hourOverviewList.appendChild(li);
+      });
     }
 
     function normalizeHours(hours) {

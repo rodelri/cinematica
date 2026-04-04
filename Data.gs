@@ -193,6 +193,49 @@ var Data = (function () {
     };
   }
 
+  function getHourOverviewForGroup_(groupName, hourNumber) {
+    var hour = Number(hourNumber);
+    if (!hour || hour < 1 || hour > CONFIG.HOURS.COUNT) {
+      throw new Error('Hora no válida. Debe estar entre 1 y ' + CONFIG.HOURS.COUNT + '.');
+    }
+
+    var sheet = getSheetByNameOrThrow_(groupName);
+    var rows = readStudentRows_(sheet);
+    var unique = {};
+    var items = [];
+    var startCol = CONFIG.HOURS.START_COLUMN + (hour - 1);
+
+    rows.forEach(function (row) {
+      var raw = Utils.asCleanString_(sheet.getRange(row.rowNumber, startCol).getDisplayValue());
+      if (!raw) {
+        return;
+      }
+
+      var partners = raw.split('|').map(function (part) {
+        return Utils.asCleanString_(part);
+      }).filter(function (part) { return !!part; });
+
+      var members = [row.name].concat(partners);
+      var key = members.slice().map(function (m) { return m.toLowerCase(); }).sort().join('|');
+      if (!key || unique[key]) {
+        return;
+      }
+
+      unique[key] = true;
+      items.push({
+        type: members.length === 3 ? 'trio' : 'pair',
+        members: members
+      });
+    });
+
+    return {
+      group: groupName,
+      hour: hour,
+      hourLabel: CONFIG.HOURS.PREFIX + hour,
+      items: items
+    };
+  }
+
   function buildGroupPdfHtml_(groupName, entries) {
     var pages = entries.map(function (entry) {
       return '<section class=\"page\">' +
@@ -264,7 +307,8 @@ var Data = (function () {
     getStudentClockByNia_: getStudentClockByNia_,
     getStudentClockByEmail_: getStudentClockByEmail_,
     findStudentGroupsByEmail_: findStudentGroupsByEmail_,
-    createGroupPdfForGroup_: createGroupPdfForGroup_
+    createGroupPdfForGroup_: createGroupPdfForGroup_,
+    getHourOverviewForGroup_: getHourOverviewForGroup_
   };
 })();
 
@@ -346,4 +390,15 @@ function apiCreateGroupPdf(groupName) {
     throw new Error('No autorizado para generar PDF del grupo.');
   }
   return Data.createGroupPdfForGroup_(groupName);
+}
+
+/**
+ * API: vista por hora de todas las parejas/tríos (solo profesor/admin).
+ */
+function apiGetHourOverview(groupName, hourNumber) {
+  var profile = resolveUserProfile_();
+  if (!profile.authorized || profile.mode !== 'teacher') {
+    throw new Error('No autorizado para consultar la vista por hora.');
+  }
+  return Data.getHourOverviewForGroup_(groupName, hourNumber);
 }
