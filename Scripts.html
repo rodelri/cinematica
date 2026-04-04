@@ -23,6 +23,7 @@
       ui.groupSelect = document.getElementById('groupSelect');
       ui.studentSelect = document.getElementById('studentSelect');
       ui.studentSelectBlock = document.getElementById('studentSelectBlock');
+      ui.clockWrapper = document.querySelector('.clock-wrapper');
       ui.clock = document.getElementById('clock');
       ui.clockCenter = document.getElementById('clockCenter');
       ui.status = document.getElementById('status');
@@ -168,13 +169,14 @@
       var normalized = normalizeHours(hours);
       ui.clock.innerHTML = '';
       ui.listView.innerHTML = '';
+      var rect = ui.clockWrapper.getBoundingClientRect();
+      var radius = rect.width * 0.41;
 
       for (var i = 1; i <= 12; i++) {
         var hourInfo = normalized[i - 1];
         var angle = ((i - 3) * 30) * (Math.PI / 180);
-        var radius = ui.clock.clientWidth * 0.41;
-        var x = (ui.clock.clientWidth / 2) + radius * Math.cos(angle);
-        var y = (ui.clock.clientHeight / 2) + radius * Math.sin(angle);
+        var x = (rect.width / 2) + radius * Math.cos(angle);
+        var y = (rect.height / 2) + radius * Math.sin(angle);
 
         var node = document.createElement('div');
         node.className = 'hour-node ' + hourInfo.type;
