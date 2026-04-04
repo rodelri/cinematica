@@ -199,7 +199,8 @@ var Data = (function () {
         '<h2>' + escapeHtml_(groupName) + ' · ' + escapeHtml_(entry.studentName) + '</h2>' +
         '<div class=\"clock\">' +
         buildTickHtml_() +
-        '<div class=\"hour-hand\"></div><div class=\"minute-hand\"></div>' +
+        '<div class=\"hour-hand\"><span class=\"hand-tip hour-tip\"></span></div>' +
+        '<div class=\"minute-hand\"><span class=\"hand-tip minute-tip\"></span></div>' +
         '<div class=\"center\">' + escapeHtml_(entry.studentName) + '</div>' +
         buildHourNodesHtml_(entry.hours) +
         '</div></section>';
@@ -214,8 +215,8 @@ var Data = (function () {
       '.hour-hand,.minute-hand{position:absolute;top:50%;left:50%;transform-origin:0 50%;border-radius:999px}' +
       '.hour-hand{width:22%;height:6px;background:#1e40af;transform:translateY(-50%) rotate(0deg)}' +
       '.minute-hand{width:33%;height:4px;background:#60a5fa;transform:translateY(-50%) rotate(-90deg)}' +
-      '.hour-hand:after,.minute-hand:after{content:\"\";position:absolute;right:-9px;top:50%;transform:translateY(-50%);width:0;height:0;border-top:6px solid transparent;border-bottom:6px solid transparent}' +
-      '.hour-hand:after{border-left:9px solid #1e40af}.minute-hand:after{border-left:9px solid #60a5fa}' +
+      '.hand-tip{position:absolute;right:-9px;top:50%;transform:translateY(-50%);width:0;height:0;border-top:6px solid transparent;border-bottom:6px solid transparent}' +
+      '.hour-tip{border-left:9px solid #1e40af}.minute-tip{border-left:9px solid #60a5fa}' +
       '.center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:36%;min-height:78px;border-radius:50%;border:2px solid #dbe7ff;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;padding:8px;z-index:2}' +
       '.node{position:absolute;width:132px;min-height:84px;padding:8px;border-radius:12px;border:1px solid #e5e7eb;background:#fff;text-align:center;transform:translate(-50%,-50%);font-size:12px}' +
       '.node.pair{background:#eff6ff;border-color:#93c5fd}.node.trio{background:#f5f3ff;border-color:#c4b5fd}.node.empty{background:#f9fafb;border-color:#e5e7eb}' +
