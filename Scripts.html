@@ -3,7 +3,8 @@
     var state = {
       profile: null,
       groups: [],
-      students: []
+      students: [],
+      lastHours: []
     };
 
     var ui = {};
@@ -36,9 +37,13 @@
     function bindEvents() {
       ui.groupSelect.addEventListener('change', onGroupChange);
       ui.studentSelect.addEventListener('change', onStudentChange);
-      ui.printBtn.addEventListener('click', function () { window.print(); });
+      ui.printBtn.addEventListener('click', function () {
+        refreshClockLayout();
+        window.print();
+      });
       ui.pdfBtn.addEventListener('click', onCreatePdfClick);
-      window.addEventListener('resize', function () { renderTicks(true); });
+      window.addEventListener('resize', refreshClockLayout);
+      window.addEventListener('beforeprint', refreshClockLayout);
     }
 
     function bootstrap() {
@@ -63,11 +68,11 @@
 
           if (isTeacher()) {
             ui.studentSelectBlock.style.display = '';
-            ui.pdfBtn.style.display = '';
+            ui.pdfBtn.hidden = false;
             loadStudentsForGroup(ui.groupSelect.value);
           } else {
             ui.studentSelectBlock.style.display = 'none';
-            ui.pdfBtn.style.display = 'none';
+            ui.pdfBtn.hidden = true;
             loadCurrentUserClock(ui.groupSelect.value);
           }
         })
@@ -81,7 +86,7 @@
       setStatus('Acceso no permitido.', 'error');
       ui.groupSelect.disabled = true;
       ui.studentSelect.disabled = true;
-      ui.pdfBtn.style.display = 'none';
+      ui.pdfBtn.hidden = true;
       renderClock([]);
     }
 
@@ -195,6 +200,7 @@
     }
 
     function renderClock(hours) {
+      state.lastHours = hours || [];
       var normalized = normalizeHours(hours);
       ui.clock.innerHTML = '';
       ui.listView.innerHTML = '';
@@ -245,6 +251,11 @@
         tick.style.transform = 'rotate(' + (i * 6) + 'deg) translate(0, -' + (isHour ? hourRadius : minuteRadius) + 'px)';
         ui.tickLayer.appendChild(tick);
       }
+    }
+
+    function refreshClockLayout() {
+      renderTicks(true);
+      renderClock(state.lastHours);
     }
 
     function normalizeHours(hours) {
