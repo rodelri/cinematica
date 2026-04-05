@@ -25,9 +25,9 @@
   .app-shell {
     max-width: 1080px;
     margin: 0 auto;
-    padding: 16px;
+    padding: 10px;
     display: grid;
-    gap: 12px;
+    gap: 10px;
   }
 
   .card {
@@ -61,8 +61,8 @@
 
   .controls {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 12px;
+    grid-template-columns: 1fr;
+    gap: 10px;
     align-items: end;
   }
 
@@ -104,8 +104,8 @@
 
   .clock-wrapper {
     position: relative;
-    width: min(88vw, 640px);
-    height: min(88vw, 640px);
+    width: min(94vw, 420px);
+    height: min(94vw, 420px);
     margin: 0 auto;
     border: 8px solid var(--ring);
     border-radius: 50%;
@@ -193,8 +193,8 @@
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    width: 35%;
-    min-height: 72px;
+    width: 48%;
+    min-height: 64px;
     border-radius: 50%;
     background: #fff;
     border: 2px solid var(--ring);
@@ -209,15 +209,15 @@
 
   .hour-node {
     position: absolute;
-    width: 120px;
-    min-height: 76px;
+    width: 84px;
+    min-height: 56px;
     border-radius: 12px;
     padding: 8px;
     background: #fff;
     border: 1px solid #e5e7eb;
     text-align: center;
     transform: translate(-50%, -50%);
-    font-size: 0.8rem;
+    font-size: 0.68rem;
     overflow: hidden;
   }
 
@@ -265,18 +265,33 @@
   .dot.trio { background: var(--trio); }
   .dot.empty { background: var(--empty); }
 
-  @media (max-width: 700px) {
+  @media (min-width: 768px) {
+    .app-shell {
+      padding: 16px;
+      gap: 12px;
+    }
+
+    .controls {
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .clock-wrapper {
+      width: min(88vw, 640px);
+      height: min(88vw, 640px);
+    }
+
     .hour-node {
-      width: 92px;
-      min-height: 64px;
-      font-size: 0.72rem;
-      padding: 6px;
+      width: 120px;
+      min-height: 76px;
+      font-size: 0.8rem;
+      padding: 8px;
     }
 
     .clock-center {
-      width: 44%;
-      min-height: 64px;
-      font-size: 0.85rem;
+      width: 35%;
+      min-height: 72px;
+      font-size: 1rem;
     }
   }
 
