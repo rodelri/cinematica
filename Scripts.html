@@ -1,0 +1,371 @@
+<script>
+  (function () {
+    var state = {
+      profile: null,
+      groups: [],
+      students: [],
+      lastHours: []
+    };
+
+    var ui = {};
+
+    document.addEventListener('DOMContentLoaded', init);
+
+    function init() {
+      cacheDom();
+      bindEvents();
+      bootstrap();
+    }
+
+    function cacheDom() {
+      ui.userEmail = document.getElementById('userEmail');
+      ui.userMode = document.getElementById('userMode');
+      ui.userMessage = document.getElementById('userMessage');
+      ui.groupSelect = document.getElementById('groupSelect');
+      ui.studentSelect = document.getElementById('studentSelect');
+      ui.studentSelectBlock = document.getElementById('studentSelectBlock');
+      ui.hourViewBlock = document.getElementById('hourViewBlock');
+      ui.hourSelect = document.getElementById('hourSelect');
+      ui.clockWrapper = document.querySelector('.clock-wrapper');
+      ui.tickLayer = document.getElementById('tickLayer');
+      ui.clock = document.getElementById('clock');
+      ui.clockCenter = document.getElementById('clockCenter');
+      ui.status = document.getElementById('status');
+      ui.listView = document.getElementById('listView');
+      ui.printBtn = document.getElementById('printBtn');
+      ui.pdfBtn = document.getElementById('pdfBtn');
+      ui.hourOverviewCard = document.getElementById('hourOverviewCard');
+      ui.hourOverviewTitle = document.getElementById('hourOverviewTitle');
+      ui.hourOverviewList = document.getElementById('hourOverviewList');
+    }
+
+    function bindEvents() {
+      ui.groupSelect.addEventListener('change', onGroupChange);
+      ui.studentSelect.addEventListener('change', onStudentChange);
+      ui.hourSelect.addEventListener('change', onHourChange);
+      ui.printBtn.addEventListener('click', function () {
+        refreshClockLayout();
+        window.print();
+      });
+      ui.pdfBtn.addEventListener('click', onCreatePdfClick);
+      window.addEventListener('resize', refreshClockLayout);
+      window.addEventListener('beforeprint', refreshClockLayout);
+    }
+
+    function bootstrap() {
+      setStatus('Cargando...', 'loading');
+      callServer('apiGetInitialState')
+        .then(function (resp) {
+          if (!resp.ok) {
+            renderUnauthorized(resp.profile);
+            return;
+          }
+
+          state.profile = resp.profile;
+          state.groups = resp.groups || [];
+          renderProfile();
+          renderTicks();
+          populateGroupSelect(state.groups);
+          populateHourSelect();
+
+          if (!state.groups.length) {
+            setStatus('No hay grupos disponibles.', 'error');
+            return;
+          }
+
+          if (isTeacher()) {
+            ui.studentSelectBlock.style.display = '';
+            ui.pdfBtn.hidden = false;
+            ui.hourViewBlock.hidden = false;
+            ui.hourOverviewCard.hidden = false;
+            loadStudentsForGroup(ui.groupSelect.value);
+            loadHourOverview(ui.groupSelect.value, ui.hourSelect.value);
+          } else {
+            ui.studentSelectBlock.style.display = 'none';
+            ui.pdfBtn.hidden = true;
+            ui.hourViewBlock.hidden = true;
+            ui.hourOverviewCard.hidden = true;
+            loadCurrentUserClock(ui.groupSelect.value);
+          }
+        })
+        .catch(showError);
+    }
+
+    function renderUnauthorized(profile) {
+      ui.userEmail.textContent = profile && profile.email ? profile.email : '(sin email)';
+      ui.userMode.textContent = 'sin acceso';
+      ui.userMessage.textContent = profile && profile.message ? profile.message : 'Acceso no permitido.';
+      setStatus('Acceso no permitido.', 'error');
+      ui.groupSelect.disabled = true;
+      ui.studentSelect.disabled = true;
+      ui.pdfBtn.hidden = true;
+      ui.hourViewBlock.hidden = true;
+      ui.hourOverviewCard.hidden = true;
+      renderClock([]);
+    }
+
+    function renderProfile() {
+      ui.userEmail.textContent = state.profile.email;
+      ui.userMode.textContent = state.profile.mode === 'teacher' ? 'profesor' : 'alumno';
+      ui.userMessage.textContent = state.profile.message || '';
+    }
+
+    function populateGroupSelect(groups) {
+      ui.groupSelect.innerHTML = '';
+      groups.forEach(function (group) {
+        ui.groupSelect.appendChild(new Option(group, group));
+      });
+    }
+
+    function populateStudentSelect(students) {
+      ui.studentSelect.innerHTML = '';
+      students.forEach(function (student) {
+        ui.studentSelect.appendChild(new Option(student.name, student.nia));
+      });
+      ui.studentSelect.disabled = students.length === 0;
+    }
+
+    function onGroupChange() {
+      var group = ui.groupSelect.value;
+      if (!group) {
+        return;
+      }
+
+      if (isTeacher()) {
+        loadStudentsForGroup(group);
+        loadHourOverview(group, ui.hourSelect.value);
+      } else {
+        loadCurrentUserClock(group);
+      }
+    }
+
+    function onStudentChange() {
+      if (!isTeacher()) {
+        return;
+      }
+
+      var group = ui.groupSelect.value;
+      var nia = ui.studentSelect.value;
+      if (!group || !nia) {
+        return;
+      }
+
+      loadStudentClock(group, nia);
+    }
+
+    function onCreatePdfClick() {
+      if (!isTeacher()) {
+        return;
+      }
+      var group = ui.groupSelect.value;
+      if (!group) {
+        setStatus('Selecciona un grupo para crear el PDF.', 'error');
+        return;
+      }
+
+      setStatus('Generando PDF del grupo...', 'loading');
+      callServer('apiCreateGroupPdf', group)
+        .then(function (result) {
+          setStatus('PDF creado: ' + result.name);
+          if (result.url) {
+            window.open(result.url, '_blank');
+          }
+        })
+        .catch(showError);
+    }
+
+    function onHourChange() {
+      if (!isTeacher()) {
+        return;
+      }
+      var group = ui.groupSelect.value;
+      var hour = ui.hourSelect.value;
+      if (!group || !hour) {
+        return;
+      }
+      loadHourOverview(group, hour);
+    }
+
+    function loadStudentsForGroup(group) {
+      setStatus('Cargando alumnos...', 'loading');
+      callServer('apiGetStudentsByGroup', group)
+        .then(function (students) {
+          state.students = students || [];
+          populateStudentSelect(state.students);
+
+          if (!state.students.length) {
+            setStatus('El grupo no tiene alumnos válidos.', 'error');
+            renderClock([]);
+            return;
+          }
+
+          loadStudentClock(group, state.students[0].nia);
+        })
+        .catch(showError);
+    }
+
+    function loadStudentClock(group, nia) {
+      setStatus('Cargando reloj del alumno...', 'loading');
+      callServer('apiGetClockForStudent', group, nia)
+        .then(function (clockData) {
+          renderClock(clockData.hours || []);
+          ui.clockCenter.textContent = clockData.student.name;
+          setStatus('');
+        })
+        .catch(showError);
+    }
+
+    function loadCurrentUserClock(group) {
+      setStatus('Cargando tu reloj...', 'loading');
+      callServer('apiGetClockForCurrentUserInGroup', group)
+        .then(function (clockData) {
+          renderClock(clockData.hours || []);
+          ui.clockCenter.textContent = clockData.student.name;
+          setStatus('');
+        })
+        .catch(showError);
+    }
+
+    function loadHourOverview(group, hour) {
+      callServer('apiGetHourOverview', group, Number(hour))
+        .then(function (resp) {
+          renderHourOverview(resp);
+        })
+        .catch(showError);
+    }
+
+    function renderClock(hours) {
+      state.lastHours = hours || [];
+      var normalized = normalizeHours(hours);
+      ui.clock.innerHTML = '';
+      ui.listView.innerHTML = '';
+      var rect = ui.clockWrapper.getBoundingClientRect();
+      var radius = rect.width * 0.41;
+
+      for (var i = 1; i <= 12; i++) {
+        var hourInfo = normalized[i - 1];
+        var angle = ((i - 3) * 30) * (Math.PI / 180);
+        var x = (rect.width / 2) + radius * Math.cos(angle);
+        var y = (rect.height / 2) + radius * Math.sin(angle);
+
+        var node = document.createElement('div');
+        node.className = 'hour-node ' + hourInfo.type;
+        node.style.left = x + 'px';
+        node.style.top = y + 'px';
+        node.innerHTML = '<span class="num">' + i + '</span><div>' + escapeHtml(hourInfo.text) + '</div>';
+        ui.clock.appendChild(node);
+
+        var li = document.createElement('li');
+        li.textContent = 'Hora ' + i + ': ' + hourInfo.text;
+        ui.listView.appendChild(li);
+      }
+    }
+
+    function renderTicks(force) {
+      if (!ui.tickLayer) {
+        return;
+      }
+
+      if (!force && ui.tickLayer.childElementCount) {
+        return;
+      }
+
+      if (force) {
+        ui.tickLayer.innerHTML = '';
+      }
+
+      var rect = ui.clockWrapper.getBoundingClientRect();
+      var outerRadius = rect.width / 2;
+      var minuteRadius = Math.max(outerRadius - 12, 20);
+      var hourRadius = Math.max(outerRadius - 18, 16);
+
+      for (var i = 0; i < 60; i++) {
+        var tick = document.createElement('div');
+        var isHour = i % 5 === 0;
+        tick.className = 'tick ' + (isHour ? 'hour' : 'minute');
+        tick.style.transform = 'rotate(' + (i * 6) + 'deg) translate(0, -' + (isHour ? hourRadius : minuteRadius) + 'px)';
+        ui.tickLayer.appendChild(tick);
+      }
+    }
+
+    function refreshClockLayout() {
+      renderTicks(true);
+      renderClock(state.lastHours);
+    }
+
+    function populateHourSelect() {
+      ui.hourSelect.innerHTML = '';
+      for (var i = 1; i <= 12; i++) {
+        ui.hourSelect.appendChild(new Option('Hora ' + i, i));
+      }
+    }
+
+    function renderHourOverview(data) {
+      ui.hourOverviewList.innerHTML = '';
+      ui.hourOverviewTitle.textContent = 'Parejas/tríos · ' + data.hourLabel;
+
+      if (!data.items || !data.items.length) {
+        var emptyLi = document.createElement('li');
+        emptyLi.textContent = 'Sin asignaciones en esta hora.';
+        ui.hourOverviewList.appendChild(emptyLi);
+        return;
+      }
+
+      data.items.forEach(function (item) {
+        var li = document.createElement('li');
+        li.textContent = (item.type === 'trio' ? 'Trío: ' : 'Pareja: ') + item.members.join(' | ');
+        ui.hourOverviewList.appendChild(li);
+      });
+    }
+
+    function normalizeHours(hours) {
+      var empty = { text: 'Sin asignar', type: 'empty' };
+      var map = {};
+
+      (hours || []).forEach(function (item) {
+        map[item.hour] = {
+          text: item.text || 'Sin asignar',
+          type: item.type || 'empty'
+        };
+      });
+
+      var ordered = [];
+      for (var i = 1; i <= 12; i++) {
+        ordered.push(map[i] || empty);
+      }
+      return ordered;
+    }
+
+    function setStatus(message, type) {
+      ui.status.textContent = message || '';
+      ui.status.className = 'status' + (type ? ' ' + type : '');
+    }
+
+    function showError(err) {
+      setStatus(err && err.message ? err.message : String(err), 'error');
+    }
+
+    function isTeacher() {
+      return state.profile && state.profile.mode === 'teacher';
+    }
+
+    function callServer(fnName) {
+      var args = Array.prototype.slice.call(arguments, 1);
+      return new Promise(function (resolve, reject) {
+        var runner = google.script.run
+          .withSuccessHandler(resolve)
+          .withFailureHandler(reject);
+        runner[fnName].apply(runner, args);
+      });
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  })();
+</script>

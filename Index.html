@@ -3,10 +3,81 @@
   <head>
     <base target="_top">
     <meta charset="utf-8">
-    <title>Cinemática</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Citas - Reloj 12 horas</title>
+    <?!= include('Styles'); ?>
   </head>
   <body>
-    <h1>Prueba GitHub + Apps Script + Codex</h1>
-    <p>Si ves esta página, la sincronización básica funciona.</p>
+    <main class="app-shell">
+      <header class="app-header card">
+        <h1>Dinámicas · Reloj de 12 horas</h1>
+        <p>Consulta visual de emparejamientos por alumno y grupo.</p>
+      </header>
+
+      <section class="card user-card">
+        <div>
+          <strong>Usuario:</strong> <span id="userEmail">Cargando...</span>
+        </div>
+        <div>
+          <strong>Modo:</strong> <span id="userMode" class="badge">-</span>
+        </div>
+        <p id="userMessage" class="muted"></p>
+      </section>
+
+      <section class="card controls">
+        <div class="control-block">
+          <label for="groupSelect">Grupo</label>
+          <select id="groupSelect"></select>
+        </div>
+
+        <div class="control-block" id="studentSelectBlock">
+          <label for="studentSelect">Alumno</label>
+          <select id="studentSelect"></select>
+        </div>
+
+        <div class="control-block" id="hourViewBlock" hidden>
+          <label for="hourSelect">Vista por hora (profe)</label>
+          <select id="hourSelect"></select>
+        </div>
+
+        <div class="control-actions">
+          <button id="printBtn" type="button">Imprimir reloj</button>
+          <button id="pdfBtn" type="button" class="secondary" hidden>PDF del grupo (admin)</button>
+        </div>
+      </section>
+
+      <section id="status" class="status"></section>
+
+      <section class="card clock-card">
+        <div class="clock-wrapper">
+          <div id="tickLayer" class="tick-layer" aria-hidden="true"></div>
+          <div class="clock-hand hour-hand" aria-hidden="true"><span class="hand-tip hour-tip"></span></div>
+          <div class="clock-hand minute-hand" aria-hidden="true"><span class="hand-tip minute-tip"></span></div>
+          <div id="clockCenter" class="clock-center">Sin alumno</div>
+          <div id="clock" class="clock"></div>
+        </div>
+      </section>
+
+      <section class="card list-card">
+        <h2>Vista en lista</h2>
+        <ul id="listView" class="list-view"></ul>
+      </section>
+
+      <section class="card list-card" id="hourOverviewCard" hidden>
+        <h2 id="hourOverviewTitle">Parejas/tríos por hora</h2>
+        <ul id="hourOverviewList" class="list-view"></ul>
+      </section>
+
+      <section class="card legend-card">
+        <h2>Leyenda</h2>
+        <ul>
+          <li><span class="dot pair"></span> Pareja (1 compañero)</li>
+          <li><span class="dot trio"></span> Trío (2 compañeros)</li>
+          <li><span class="dot empty"></span> Sin asignar</li>
+        </ul>
+      </section>
+    </main>
+
+    <?!= include('Scripts'); ?>
   </body>
 </html>

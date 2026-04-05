@@ -1,0 +1,311 @@
+<style>
+  :root {
+    --bg: #f5f7fb;
+    --card: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --primary: #2563eb;
+    --ring: #dbe7ff;
+    --pair: #93c5fd;
+    --trio: #c4b5fd;
+    --empty: #e5e7eb;
+    --brand-1: #2563eb;
+    --brand-2: #60a5fa;
+    --brand-3: #1e40af;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  .app-shell {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 10px;
+    display: grid;
+    gap: 10px;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: 14px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+    padding: 14px;
+  }
+
+  .app-header h1 {
+    margin: 0 0 4px 0;
+    font-size: 1.4rem;
+  }
+
+  .app-header p,
+  .muted {
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: var(--ring);
+    color: var(--primary);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+  }
+
+  .controls {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    align-items: end;
+  }
+
+  .control-block label {
+    display: block;
+    font-size: 0.85rem;
+    margin-bottom: 6px;
+    color: var(--muted);
+  }
+
+  select, button {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    padding: 10px;
+    background: #fff;
+    font-size: 0.95rem;
+  }
+
+  button {
+    background: var(--primary);
+    color: white;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+  }
+  button.secondary {
+    background: #0f766e;
+  }
+
+  .status {
+    min-height: 22px;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+
+  .status.error { color: #b91c1c; }
+  .status.loading { color: var(--primary); }
+
+  .clock-wrapper {
+    position: relative;
+    width: min(94vw, 420px);
+    height: min(94vw, 420px);
+    margin: 0 auto;
+    border: 8px solid var(--ring);
+    border-radius: 50%;
+    background: radial-gradient(circle at center, #fff 30%, #eef4ff 100%);
+  }
+
+  .clock {
+    position: absolute;
+    inset: 0;
+  }
+
+  .tick-layer {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    z-index: 0;
+  }
+
+  .tick {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform-origin: 0 0;
+    border-radius: 999px;
+  }
+
+  .tick.minute {
+    width: 9px;
+    height: 2px;
+    background: rgba(37, 99, 235, 0.25);
+  }
+
+  .tick.hour {
+    width: 15px;
+    height: 3px;
+    background: var(--brand-1);
+  }
+
+  .clock-hand {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform-origin: 0 50%;
+    transform: translateY(-50%) rotate(0deg);
+    border-radius: 999px;
+    z-index: 1;
+    opacity: 0.95;
+  }
+
+  .hour-hand {
+    width: 22%;
+    height: 6px;
+    background: var(--brand-3);
+  }
+
+  .minute-hand {
+    width: 33%;
+    height: 4px;
+    background: var(--brand-2);
+    transform: translateY(-50%) rotate(-90deg);
+  }
+
+  .hand-tip {
+    position: absolute;
+    right: -9px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+    border-left: 9px solid transparent;
+  }
+
+  .hour-tip {
+    border-left-color: var(--brand-3);
+  }
+
+  .minute-tip {
+    border-left-color: var(--brand-2);
+  }
+
+  .clock-center {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 48%;
+    min-height: 64px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid var(--ring);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 10px;
+    font-weight: 700;
+    z-index: 2;
+  }
+
+  .hour-node {
+    position: absolute;
+    width: 84px;
+    min-height: 56px;
+    border-radius: 12px;
+    padding: 8px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    text-align: center;
+    transform: translate(-50%, -50%);
+    font-size: 0.68rem;
+    overflow: hidden;
+  }
+
+  .hour-node .num {
+    display: inline-block;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .hour-node.pair { background: #eff6ff; border-color: var(--pair); }
+  .hour-node.trio { background: #f5f3ff; border-color: var(--trio); }
+  .hour-node.empty { background: #f9fafb; border-color: var(--empty); }
+
+  .list-view {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 8px;
+  }
+
+  .list-view li {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 8px 10px;
+    background: #fff;
+  }
+
+  .legend-card ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 6px;
+  }
+
+  .dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    margin-right: 8px;
+  }
+  .dot.pair { background: var(--pair); }
+  .dot.trio { background: var(--trio); }
+  .dot.empty { background: var(--empty); }
+
+  @media (min-width: 768px) {
+    .app-shell {
+      padding: 16px;
+      gap: 12px;
+    }
+
+    .controls {
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .clock-wrapper {
+      width: min(88vw, 640px);
+      height: min(88vw, 640px);
+    }
+
+    .hour-node {
+      width: 120px;
+      min-height: 76px;
+      font-size: 0.8rem;
+      padding: 8px;
+    }
+
+    .clock-center {
+      width: 35%;
+      min-height: 72px;
+      font-size: 1rem;
+    }
+  }
+
+  @media print {
+    .app-header,
+    .user-card,
+    .controls,
+    .status,
+    .list-card,
+    .legend-card { display: none !important; }
+    .app-shell { max-width: 100%; padding: 0; }
+    .clock-card { padding: 0; border: none; }
+    .clock-wrapper { width: 640px; height: 640px; max-width: 640px; max-height: 640px; }
+    body { background: #fff; }
+    .card { box-shadow: none; border: none; }
+  }
+</style>
